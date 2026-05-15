@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DentAI — Instant Car Damage Estimator</title>
+<meta name="description" content="Snap a photo of car damage. Get an instant repair cost estimate. Never overpay at a body shop again." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: #0a0a0a;
+    color: #f0f0f0;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  .container { max-width: 560px; margin: 0 auto; padding: 2rem 1.25rem 3rem; }
+  .screen { display: none; }
+  .screen.active { display: block; animation: fadeIn .3s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 26px;
+    letter-spacing: .12em;
+    margin-bottom: 2.5rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .logo-dot { width: 10px; height: 10px; background: #FF6B00; border-radius: 50%; }
+  .logo span { color: #888; font-size: 13px; font-family: 'Inter'; letter-spacing: .08em; font-weight: 500; }
+
+  .hero-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 56px;
+    line-height: .95;
+    letter-spacing: .01em;
+    margin-bottom: 1rem;
+  }
+  .hero-title .accent { color: #FF6B00; }
+  .hero-sub { font-size: 16px; color: #aaa; line-height: 1.5; margin-bottom: 2.5rem; }
+
+  .plans { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1.5rem; }
+  .plan {
+    background: #141414;
+    border: 1px solid #232323;
+    border-radius: 14px;
+    padding: 1.25rem;
+    cursor: pointer;
+    transition: all .2s;
+    position: relative;
+  }
+  .plan:hover { border-color: #444; }
+  .plan.selected { border-color: #FF6B00; background: #1a1208; }
+  .plan-badge {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: #FF6B00;
+    margin-bottom: .6rem;
+  }
+  .plan-price {
+    font-family: 'Bebas Neue';
+    font-size: 36px;
+    line-height: 1;
+    margin-bottom: .25rem;
+  }
+  .plan-price small { font-size: 14px; font-family: 'Inter'; color: #888; font-weight: 400; }
+  .plan-desc { font-size: 13px; color: #aaa; margin-bottom: .75rem; }
+  .plan-feat { font-size: 12px; color: #888; line-height: 1.7; }
+  .plan-feat span { color: #4ade80; margin-right: 6px; font-weight: 700; }
+
+  .btn {
+    width: 100%;
+    padding: 16px;
+    background: #FF6B00;
+    color: #0a0a0a;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Inter';
+    transition: all .15s;
+  }
+  .btn:hover { background: #ff7a1a; transform: translateY(-1px); }
+  .btn:disabled { opacity: .35; cursor: not-allowed; transform: none; }
+  .btn-ghost {
+    background: transparent;
+    color: #f0f0f0;
+    border: 1px solid #2a2a2a;
+  }
+  .btn-ghost:hover { background: #141414; border-color: #444; }
+
+  .back {
+    background: none; border: none; color: #888; font-size: 13px;
+    cursor: pointer; padding: 0; margin-bottom: 1.5rem;
+    display: flex; align-items: center; gap: 6px; font-family: 'Inter';
+  }
+  .back:hover { color: #f0f0f0; }
+
+  .plan-banner {
+    background: #141414;
+    border: 1px solid #232323;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 1.5rem;
+    font-size: 13px;
+    color: #aaa;
+  }
+  .plan-banner b { color: #f0f0f0; }
+
+  .upload-box {
+    border: 2px dashed #2a2a2a;
+    border-radius: 16px;
+    padding: 3rem 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    background: #0d0d0d;
+    transition: all .2s;
+  }
+  .upload-box:hover { border-color: #FF6B00; background: #141414; }
+  .upload-icon { font-size: 48px; margin-bottom: .75rem; }
+  .upload-title { font-size: 16px; font-weight: 600; margin-bottom: .25rem; }
+  .upload-sub { font-size: 13px; color: #888; }
+
+  .preview {
+    width: 100%;
+    max-height: 280px;
+    object-fit: cover;
+    border-radius: 14px;
+    margin-bottom: 1rem;
+    display: none;
+  }
+
+  .pay-card {
+    background: #141414;
+    border: 1px solid #232323;
+    border-radius: 14px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+  }
+  .pay-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px; }
+  .pay-row .label { color: #888; }
+  .pay-row.total { border-top: 1px solid #232323; margin-top: 6px; padding-top: 14px; font-weight: 600; font-size: 16px; }
+  .pay-row.total .val { color: #FF6B00; font-family: 'Bebas Neue'; font-size: 24px; }
+
+  .secure-tag {
+    text-align: center;
+    font-size: 12px;
+    color: #666;
+    margin-top: 1rem;
+  }
+
+  .analyzing { text-align: center; padding: 4rem 1rem; }
+  .spinner {
+    width: 48px; height: 48px;
+    border: 3px solid #1a1a1a;
+    border-top-color: #FF6B00;
+    border-radius: 50%;
+    margin: 0 auto 1.5rem;
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .analyzing-title { font-size: 17px; font-weight: 600; margin-bottom: .5rem; }
+  .analyzing-sub { font-size: 13px; color: #888; }
+
+  .result-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 1.25rem; }
+  .result-tag { font-size: 11px; color: #888; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 4px; }
+  .result-title { font-size: 22px; font-family: 'Bebas Neue'; line-height: 1.1; }
+  .sev-pill {
+    background: #141414;
+    padding: 8px 14px;
+    border-radius: 10px;
+    text-align: center;
+    border: 1px solid #232323;
+  }
+  .sev-pill-label { font-size: 9px; color: #888; letter-spacing: .08em; text-transform: uppercase; }
+  .sev-pill-val { font-size: 14px; font-weight: 600; margin-top: 2px; }
+
+  .result-card {
+    background: #141414;
+    border: 1px solid #232323;
+    border-radius: 14px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+  }
+  .result-card-label { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: #888; margin-bottom: .6rem; font-weight: 600; }
+  .result-card-value { font-size: 14px; line-height: 1.6; color: #ddd; }
+  .cost {
+    font-family: 'Bebas Neue';
+    font-size: 40px;
+    color: #FF6B00;
+    letter-spacing: .02em;
+  }
+  .severity-bar { height: 6px; background: #232323; border-radius: 3px; overflow: hidden; margin-top: 1rem; }
+  .severity-fill { height: 100%; width: 0; transition: width .8s ease; border-radius: 3px; }
+  .sev-low { background: #4ade80; }
+  .sev-med { background: #FFB800; }
+  .sev-high { background: #ef4444; }
+
+  .demo-banner {
+    background: #2d1f08;
+    border: 1px solid #4a3210;
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-bottom: 1rem;
+    font-size: 12px;
+    color: #FFB800;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .footer-note {
+    text-align: center;
+    font-size: 11px;
+    color: #555;
+    margin-top: 2rem;
+    line-height: 1.6;
+  }
+
+  @media (max-width: 480px) {
+    .hero-title { font-size: 44px; }
+    .plans { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- LANDING -->
+  <div class="screen active" id="s-landing">
+    <div class="logo"><div class="logo-dot"></div>DENTAI <span>· instant estimates</span></div>
+    <h1 class="hero-title">Know the<br>cost before<br>you <span class="accent">call.</span></h1>
+    <p class="hero-sub">Snap a photo of any car damage. Our AI tells you what's broken and what it'll cost — in 10 seconds. No more shop surprises.</p>
+
+    <div class="plans">
+      <div class="plan selected" data-plan="scan" onclick="selectPlan(this)">
+        <div class="plan-badge">Pay per scan</div>
+        <div class="plan-price">$4.99</div>
+        <div class="plan-desc">One scan, one report</div>
+        <div class="plan-feat"><span>✓</span> Instant estimate<br><span>✓</span> Shop-ready report</div>
+      </div>
+      <div class="plan" data-plan="monthly" onclick="selectPlan(this)">
+        <div class="plan-badge" style="color:#4ade80">Best value</div>
+        <div class="plan-price">$9.99<small>/mo</small></div>
+        <div class="plan-desc">Unlimited scans</div>
+        <div class="plan-feat"><span>✓</span> Unlimited reports<br><span>✓</span> Save history</div>
+      </div>
+    </div>
+
+    <button class="btn" onclick="goTo('s-upload')">Get my estimate →</button>
+    <p class="footer-note">Works on dents · scratches · bumpers · panels</p>
+  </div>
+
+  <!-- UPLOAD -->
+  <div class="screen" id="s-upload">
+    <button class="back" onclick="goTo('s-landing')">← Back</button>
+    <div class="plan-banner">Selected: <b id="plan-label">Pay per scan — $4.99</b></div>
+
+    <img class="preview" id="preview" alt="Damage preview" />
+
+    <div class="upload-box" id="upload-box" onclick="document.getElementById('fileInput').click()">
+      <div class="upload-icon">📸</div>
+      <div class="upload-title" id="upload-title">Upload your damage photo</div>
+      <div class="upload-sub">Tap to choose from your camera roll</div>
+    </div>
+    <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handleFile(this)" />
+
+    <div style="margin-top:1.25rem">
+      <button class="btn" id="analyze-btn" onclick="goTo('s-payment')" disabled>Continue to payment</button>
+    </div>
+  </div>
+
+  <!-- PAYMENT -->
+  <div class="screen" id="s-payment">
+    <button class="back" onclick="goTo('s-upload')">← Back</button>
+
+    <div class="demo-banner">
+      ⚠️ Stripe key not configured yet — see README to wire up real payments
+    </div>
+
+    <div class="pay-card">
+      <div class="pay-row"><span class="label">Plan</span><span class="val" id="pay-plan">Pay per scan</span></div>
+      <div class="pay-row"><span class="label">Amount</span><span class="val" id="pay-amount">$4.99</span></div>
+      <div class="pay-row total"><span class="label">Total</span><span class="val" id="pay-total">$4.99</span></div>
+    </div>
+
+    <button class="btn" onclick="startAnalysis()">🔒 Pay & analyze damage</button>
+    <p class="secure-tag">Secured by Stripe · 256-bit SSL</p>
+  </div>
+
+  <!-- ANALYZING -->
+  <div class="screen" id="s-analyzing">
+    <div class="analyzing">
+      <div class="spinner"></div>
+      <div class="analyzing-title" id="analyze-status">Inspecting damage area...</div>
+      <div class="analyzing-sub">Our AI is on it · usually takes 10 seconds</div>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="screen" id="s-results">
+    <div class="result-header">
+      <div>
+        <div class="result-tag">Damage report</div>
+        <div class="result-title" id="damage-type">Loading...</div>
+      </div>
+      <div class="sev-pill">
+        <div class="sev-pill-label">Severity</div>
+        <div class="sev-pill-val" id="severity-label">—</div>
+      </div>
+    </div>
+
+    <div class="result-card">
+      <div class="result-card-label">Estimated repair cost</div>
+      <div class="cost" id="cost-range">$—</div>
+      <div class="severity-bar"><div class="severity-fill" id="sev-fill"></div></div>
+    </div>
+
+    <div class="result-card">
+      <div class="result-card-label">What's damaged</div>
+      <div class="result-card-value" id="damage-detail">—</div>
+    </div>
+
+    <div class="result-card">
+      <div class="result-card-label">Recommended action</div>
+      <div class="result-card-value" id="recommendation">—</div>
+    </div>
+
+    <div class="result-card">
+      <div class="result-card-label">💬 What to tell the body shop</div>
+      <div class="result-card-value" id="shop-script">—</div>
+    </div>
+
+    <button class="btn btn-ghost" onclick="scanAgain()">↻ Scan another vehicle</button>
+    <p class="footer-note">Estimates are AI-generated · Always confirm with a licensed shop</p>
+  </div>
+
+</div>
+
+<script>
+  let selectedPlan = 'scan';
+  let uploadedImageB64 = null;
+  let uploadedMime = 'image/jpeg';
+
+  function goTo(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0, 0);
+  }
+
+  function selectPlan(el) {
+    document.querySelectorAll('.plan').forEach(p => p.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedPlan = el.dataset.plan;
+    updateLabels();
+  }
+
+  function updateLabels() {
+    const scan = selectedPlan === 'scan';
+    document.getElementById('plan-label').textContent = scan ? 'Pay per scan — $4.99' : 'Monthly unlimited — $9.99/mo';
+    document.getElementById('pay-plan').textContent = scan ? 'Pay per scan' : 'Monthly unlimited';
+    document.getElementById('pay-amount').textContent = scan ? '$4.99' : '$9.99';
+    document.getElementById('pay-total').textContent = scan ? '$4.99' : '$9.99';
+  }
+
+  function handleFile(input) {
+    const file = input.files[0];
+    if (!file) return;
+    uploadedMime = file.type || 'image/jpeg';
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target.result;
+      uploadedImageB64 = dataUrl.split(',')[1];
+      const preview = document.getElementById('preview');
+      preview.src = dataUrl;
+      preview.style.display = 'block';
+      document.getElementById('upload-title').textContent = '✓ Photo ready';
+      document.getElementById('upload-box').style.opacity = '.6';
+      document.getElementById('analyze-btn').disabled = false;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function startAnalysis() {
+    if (!uploadedImageB64) {
+      alert('Please upload a photo first');
+      goTo('s-upload');
+      return;
+    }
+    goTo('s-analyzing');
+    const statuses = [
+      'Inspecting damage area...',
+      'Identifying affected parts...',
+      'Calculating labor & materials...',
+      'Finalizing your report...'
+    ];
+    let i = 0;
+    const statusEl = document.getElementById('analyze-status');
+    const interval = setInterval(() => {
+      i = (i + 1) % statuses.length;
+      statusEl.textContent = statuses[i];
+    }, 1800);
+
+    try {
+      const resp = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageData: uploadedImageB64, mimeType: uploadedMime })
+      });
+
+      clearInterval(interval);
+      if (!resp.ok) throw new Error('Analysis failed: ' + resp.status);
+      const result = await resp.json();
+
+      document.getElementById('damage-type').textContent = result.damageType || 'Damage Detected';
+      document.getElementById('severity-label').textContent = result.severity || 'Medium';
+      document.getElementById('cost-range').textContent = '$' + (result.costLow || 0).toLocaleString() + ' – $' + (result.costHigh || 0).toLocaleString();
+      document.getElementById('damage-detail').textContent = result.damageDetail || '—';
+      document.getElementById('recommendation').textContent = result.recommendation || '—';
+      document.getElementById('shop-script').textContent = result.shopScript || '—';
+
+      const fill = document.getElementById('sev-fill');
+      const pct = Math.min(Math.max(result.severityPercent || 40, 10), 95);
+      const sevClass = pct < 35 ? 'sev-low' : pct < 65 ? 'sev-med' : 'sev-high';
+      fill.className = 'severity-fill ' + sevClass;
+      setTimeout(() => { fill.style.width = pct + '%'; }, 200);
+
+      goTo('s-results');
+    } catch (err) {
+      clearInterval(interval);
+      alert('Error: ' + err.message + '\n\nMake sure ANTHROPIC_API_KEY is set in Vercel.');
+      goTo('s-upload');
+    }
+  }
+
+  function scanAgain() {
+    uploadedImageB64 = null;
+    document.getElementById('preview').style.display = 'none';
+    document.getElementById('preview').src = '';
+    document.getElementById('upload-title').textContent = 'Upload your damage photo';
+    document.getElementById('upload-box').style.opacity = '1';
+    document.getElementById('fileInput').value = '';
+    document.getElementById('analyze-btn').disabled = true;
+    goTo('s-landing');
+  }
+</script>
+</body>
+</html>

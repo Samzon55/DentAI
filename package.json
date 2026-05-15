@@ -1,0 +1,9 @@
+{
+  "name": "dentai",
+  "version": "1.0.0",
+  "description": "AI car damage estimator",
+  "main": "index.html",
+  "scripts": {
+    "dev": "vercel dev"
+  }
+}
